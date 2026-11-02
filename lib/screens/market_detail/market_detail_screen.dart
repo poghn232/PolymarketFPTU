@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/market_model.dart';
+import '../../models/bet_model.dart';
 import '../../services/app_service.dart';
 import '../../theme/fpt_theme.dart';
 import '../../widgets/candy_chip.dart';
@@ -99,6 +100,78 @@ class MarketDetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
+            // Khung điều khiển nhanh dành riêng cho Admin để Test
+            if (appService.isAdmin && !isResolved) ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFCBD5E1)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.admin_panel_settings, color: FptColors.navy, size: 16),
+                        SizedBox(width: 6),
+                        Text(
+                          'Công cụ Admin Test:',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: FptColors.navy),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        if (!market.isExpired)
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () async {
+                                await appService.expireMarketNow(market.id);
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('⚡ Đã làm hết giờ cược ngay lập tức!'),
+                                      backgroundColor: FptColors.navy,
+                                    ),
+                                  );
+                                }
+                              },
+                              icon: const Icon(Icons.flash_on, size: 14),
+                              label: const Text('Làm hết giờ cược'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: FptColors.orange,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
+                              ),
+                            ),
+                          )
+                        else
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: Colors.red.shade100,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Text(
+                                '⏳ Đã hết giờ cược',
+                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: FptColors.noRed),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+
             // Market Title
             Text(
               market.title,
@@ -111,8 +184,108 @@ class MarketDetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: 14),
 
-            // Khu vực hiển thị cược của bạn nếu đã cược
-            if (myBet != null) ...[
+            // BẢNG KẾT QUẢ CHÍNH THỨC DÀNH CHO VỤ BET ĐÃ CHỐT
+            if (isResolved) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: market.winningOutcome == MarketOutcome.yes
+                        ? [const Color(0xFFECFDF5), const Color(0xFFD1FAE5)]
+                        : [const Color(0xFFFEF2F2), const Color(0xFFFEE2E2)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: market.winningOutcome == MarketOutcome.yes
+                        ? FptColors.yesGreen
+                        : FptColors.noRed,
+                    width: 1.5,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.emoji_events,
+                          color: market.winningOutcome == MarketOutcome.yes
+                              ? FptColors.yesGreen
+                              : FptColors.noRed,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'KẾT QUẢ CHÍNH THỨC: CỬA ${market.winningOutcome == MarketOutcome.yes ? "CÓ" : "KHÔNG"} THẮNG',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w900,
+                            color: market.winningOutcome == MarketOutcome.yes
+                                ? const Color(0xFF065F46)
+                                : const Color(0xFF991B1B),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    if (myBet != null) ...[
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.8),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          children: [
+                            Text(
+                              myBet.status == BetStatus.won ? '🎉' : '💔',
+                              style: const TextStyle(fontSize: 22),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    myBet.status == BetStatus.won
+                                        ? 'BẠN ĐÃ THẮNG: +${myBet.actualPayout} 🍬'
+                                        : 'BẠN ĐÃ THUA: -${myBet.amount} 🍬',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w900,
+                                      color: myBet.status == BetStatus.won
+                                          ? FptColors.yesGreen
+                                          : FptColors.noRed,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    myBet.status == BetStatus.won
+                                        ? 'Bạn cược ${myBet.amount} 🍬 cửa ${myBet.outcome == MarketOutcome.yes ? "CÓ" : "KHÔNG"} -> Đã cộng +${myBet.actualPayout} 🍬 vào tài khoản.'
+                                        : 'Bạn cược ${myBet.amount} 🍬 cửa ${myBet.outcome == MarketOutcome.yes ? "CÓ" : "KHÔNG"} (Kết quả ra cửa ngược lại).',
+                                    style: const TextStyle(fontSize: 11, color: FptColors.textDark),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ] else ...[
+                      const Text(
+                        'ℹ️ Bạn không tham gia đặt cược vào vụ bet này.',
+                        style: TextStyle(fontSize: 12, color: FptColors.gray600, fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+            ] else if (myBet != null) ...[
+              // Khi kèo đang mở và người dùng đã cược
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(14),

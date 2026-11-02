@@ -141,7 +141,7 @@ class _ResolveMarketScreenState extends State<ResolveMarketScreen> {
                           Row(
                             children: [
                               Text(
-                                'CÓ: ${m.yesPool} 🍬 (${m.yesPercentage.toStringAsFixed(0)}%)',
+                                'CÓ: ${m.yesPool} 🍬 (${m.yesCount} người)',
                                 style: const TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
@@ -150,13 +150,75 @@ class _ResolveMarketScreenState extends State<ResolveMarketScreen> {
                               ),
                               const SizedBox(width: 14),
                               Text(
-                                'KHÔNG: ${m.noPool} 🍬 (${m.noPercentage.toStringAsFixed(0)}%)',
+                                'KHÔNG: ${m.noPool} 🍬 (${m.noCount} người)',
                                 style: const TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
                                   color: FptColors.noRed,
                                 ),
                               ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          // Nút Admin làm hết giờ cược ngay lập tức để test
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              if (m.isExpired)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red.shade50,
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(color: Colors.red.shade200),
+                                  ),
+                                  child: const Row(
+                                    children: [
+                                      Icon(Icons.timer_off, size: 12, color: FptColors.noRed),
+                                      SizedBox(width: 4),
+                                      Text(
+                                        'Đã hết thời gian (Chờ chốt kết quả)',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w700,
+                                          color: FptColors.noRed,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              else
+                                Row(
+                                  children: [
+                                    const Icon(Icons.access_time, size: 12, color: FptColors.orange),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Còn ${m.remainingTime.inDays}d ${m.remainingTime.inHours % 24}h',
+                                      style: const TextStyle(fontSize: 11, color: FptColors.gray600),
+                                    ),
+                                  ],
+                                ),
+                              if (!m.isExpired)
+                                OutlinedButton.icon(
+                                  onPressed: () async {
+                                    await appService.expireMarketNow(m.id);
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('⚡ Đã làm hết giờ cược kèo "${m.title}"!'),
+                                          backgroundColor: FptColors.navy,
+                                        ),
+                                      );
+                                    }
+                                  },
+                                  icon: const Icon(Icons.flash_on, size: 13, color: FptColors.orangeDark),
+                                  label: const Text('Làm hết giờ ngay', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: FptColors.orangeDark)),
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    side: const BorderSide(color: FptColors.orange),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                  ),
+                                ),
                             ],
                           ),
                         ],

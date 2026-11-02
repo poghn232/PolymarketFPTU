@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';
 import '../models/market_model.dart';
 import '../models/bet_model.dart';
+import '../models/notification_model.dart';
+import '../models/history_model.dart';
 import 'database_helper.dart';
 
 class AppService extends ChangeNotifier {
@@ -15,6 +17,8 @@ class AppService extends ChangeNotifier {
   List<UserModel> _users = [];
   List<MarketModel> _markets = [];
   List<BetModel> _bets = [];
+  List<NotificationModel> _notifications = [];
+  List<HistoryModel> _history = [];
   int _adminVaultCandies = 5000;
   bool _isInitialized = false;
 
@@ -22,6 +26,9 @@ class AppService extends ChangeNotifier {
   List<UserModel> get users => _users;
   List<MarketModel> get markets => _markets;
   List<BetModel> get bets => _bets;
+  List<NotificationModel> get notifications => _notifications;
+  List<HistoryModel> get history => _history;
+  int get unreadNotificationCount => _notifications.where((n) => !n.isRead).length;
   int get adminVaultCandies => _adminVaultCandies;
   bool get isInitialized => _isInitialized;
   bool get isAdmin => _currentUser?.isAdmin ?? false;
@@ -81,6 +88,11 @@ class AppService extends ChangeNotifier {
 
     if (_currentUser != null) {
       _currentUser = await _dbHelper.getUserById(_currentUser!.id);
+      _notifications = await _dbHelper.getNotificationsForUser(_currentUser!.id);
+      _history = await _dbHelper.getHistoryForUser(_currentUser!.id);
+    } else {
+      _notifications = [];
+      _history = [];
     }
   }
 
@@ -134,6 +146,30 @@ class AppService extends ChangeNotifier {
     );
 
     await _dbHelper.insertUser(newUser);
+
+    // Ghi vào bảng 'history' và 'notifications' trong SQLite
+    await _dbHelper.insertHistory(HistoryModel(
+      id: 'hist_${DateTime.now().millisecondsSinceEpoch}',
+      userId: newUser.id,
+      userName: newUser.fullName,
+      marketTitle: 'Tặng vốn tân sinh viên FPT',
+      action: 'welcome_bonus',
+      amount: 50,
+      balanceAfter: 50,
+      description: 'Nhận 50 🍬 vốn khởi nghiệp ban đầu khi gia nhập FPT Market',
+      createdAt: DateTime.now(),
+    ));
+
+    await _dbHelper.insertNotification(NotificationModel(
+      id: 'notif_${DateTime.now().millisecondsSinceEpoch}',
+      userId: newUser.id,
+      title: '🎁 Chào Mừng Đến Với FPT Market',
+      message: 'Bạn đã nhận 50 🍬 vốn ban đầu. Hãy tham gia dự đoán các kèo hot tại campus nhé!',
+      type: 'claim',
+      amount: 50,
+      createdAt: DateTime.now(),
+    ));
+
     _currentUser = newUser;
     await _dbHelper.setConfig('current_session_user_id', newUser.id);
     await _refreshDataFromDb();
@@ -187,6 +223,21 @@ class AppService extends ChangeNotifier {
     );
     await _dbHelper.insertBet(newBet);
 
+    // Ghi nhận biến động kẹo vào SQLite bảng 'history'
+    await _dbHelper.insertHistory(HistoryModel(
+      id: 'hist_${DateTime.now().millisecondsSinceEpoch}',
+      userId: freshUser.id,
+      userName: freshUser.fullName,
+      marketId: market.id,
+      marketTitle: market.title,
+      action: 'bet_placed',
+      outcome: outcome.name,
+      amount: -amount,
+      balanceAfter: newCandies,
+      description: 'Đặt cược $amount 🍬 vào cửa ${outcome == MarketOutcome.yes ? "CÓ" : "KHÔNG"}',
+      createdAt: DateTime.now(),
+    ));
+
     // 4. Cập nhật số lượng kẹo và số người cược trong SQLite table 'markets'
     int updatedYesPool = market.yesPool;
     int updatedNoPool = market.noPool;
@@ -234,6 +285,32 @@ class AppService extends ChangeNotifier {
     final todayStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
 
     await _dbHelper.claimDailyCandyInDb(_currentUser!.id, 20, todayStr);
+
+    final currentBalance = _currentUser!.candies + 20;
+    // Ghi lịch sử biến động kẹo vào bảng 'history'
+    await _dbHelper.insertHistory(HistoryModel(
+      id: 'hist_${DateTime.now().millisecondsSinceEpoch}',
+      userId: _currentUser!.id,
+      userName: _currentUser!.fullName,
+      marketTitle: 'Điểm danh hằng ngày',
+      action: 'daily_claim',
+      amount: 20,
+      balanceAfter: currentBalance,
+      description: 'Điểm danh chuyên cần FPT nhận +20 🍬',
+      createdAt: DateTime.now(),
+    ));
+
+    // Ghi thông báo vào bảng 'notifications'
+    await _dbHelper.insertNotification(NotificationModel(
+      id: 'notif_${DateTime.now().millisecondsSinceEpoch}',
+      userId: _currentUser!.id,
+      title: '🍬 Điểm danh thành công!',
+      message: 'Bạn đã nhận 20 🍬 kẹo chuyên cần hôm nay. Hãy quay lại vào ngày mai để tiếp tục nhận nhé!',
+      type: 'claim',
+      amount: 20,
+      createdAt: DateTime.now(),
+    ));
+
     await _refreshDataFromDb();
     notifyListeners();
     return null; // Thành công
@@ -276,6 +353,14 @@ class AppService extends ChangeNotifier {
     notifyListeners();
   }
 
+  // --- TÍNH NĂNG ADMIN: LÀM HẾT GIỜ KÈO CƯỢC NGAY LẬP TỨC ĐỂ TEST ---
+  Future<void> expireMarketNow(String marketId) async {
+    if (!isAdmin) return;
+    await _dbHelper.expireMarketNow(marketId);
+    await _refreshDataFromDb();
+    notifyListeners();
+  }
+
   // --- TÍNH NĂNG ADMIN: CHỐT KÈO & CỘNG KẸO THƯỞNG CHO NGƯỜI THẮNG ---
   Future<void> resolveMarket({
     required String marketId,
@@ -298,32 +383,37 @@ class AppService extends ChangeNotifier {
     final totalLosingPool = winningOutcome == MarketOutcome.yes ? market.noPool : market.yesPool;
 
     if (losingBets.isEmpty && winningBets.isNotEmpty) {
-      // Không ai cược bên thua: Người thắng nhận kẹo từ bảo chứng của Admin
+      // Trường hợp 1: Tất cả chỉ cược bên thắng, không ai cược bên thua
+      // -> Admin đóng vai trò đối ứng chi trả kẹo thưởng, Admin BỊ TRỪ KẸO trong Database!
       final backstopReward = market.adminBackstopCandies;
+      
+      // Trừ kẹo quỹ Admin trong SQLite
+      _adminVaultCandies = (_adminVaultCandies - backstopReward).clamp(0, 99999999);
+      await _dbHelper.updateAdminVaultCandies(_adminVaultCandies);
+      final adminUser = _users.cast<UserModel?>().firstWhere((u) => u?.role == UserRole.admin, orElse: () => null);
+      if (adminUser != null) {
+        await _dbHelper.addCandies(adminUser.id, -backstopReward);
+      }
+
       for (final bet in winningBets) {
         final ratio = bet.amount / (totalWinningPool > 0 ? totalWinningPool : 1);
         final profit = (backstopReward * ratio).round();
         final totalPayout = bet.amount + profit;
 
-        await _dbHelper.updateBetResolution(
-          betId: bet.id,
-          status: BetStatus.won,
-          actualPayout: totalPayout,
-        );
-        // Cộng kẹo vào SQLite tài khoản sinh viên thắng
-        await _dbHelper.addCandies(bet.userId, totalPayout);
+        await _processWinningBet(bet, market, totalPayout);
       }
     } else if (winningBets.isEmpty && losingBets.isNotEmpty) {
-      // Không ai chọn bên thắng: Toàn bộ kẹo bên thua chuyển về kho Admin
-      _adminVaultCandies += totalLosingPool + market.adminBackstopCandies;
+      // Trường hợp 2: Tất cả chỉ cược bên thua, không ai chọn bên thắng
+      // -> Toàn bộ số kẹo thua của người dùng chuyển về kho quỹ Admin, Admin ĐƯỢC CỘNG KẸO trong Database!
+      _adminVaultCandies += totalLosingPool;
       await _dbHelper.updateAdminVaultCandies(_adminVaultCandies);
+      final adminUser = _users.cast<UserModel?>().firstWhere((u) => u?.role == UserRole.admin, orElse: () => null);
+      if (adminUser != null) {
+        await _dbHelper.addCandies(adminUser.id, totalLosingPool);
+      }
 
       for (final bet in losingBets) {
-        await _dbHelper.updateBetResolution(
-          betId: bet.id,
-          status: BetStatus.lost,
-          actualPayout: 0,
-        );
+        await _processLosingBet(bet, market, winningOutcome);
       }
     } else {
       // Trường hợp thông thường: Cả hai bên đều có người cược
@@ -333,28 +423,129 @@ class AppService extends ChangeNotifier {
         final bonus = (prizePool * share).round();
         final totalPayout = bet.amount + bonus;
 
-        await _dbHelper.updateBetResolution(
-          betId: bet.id,
-          status: BetStatus.won,
-          actualPayout: totalPayout,
-        );
-        // Cộng kẹo vào SQLite tài khoản sinh viên thắng
-        await _dbHelper.addCandies(bet.userId, totalPayout);
+        await _processWinningBet(bet, market, totalPayout);
       }
 
       for (final bet in losingBets) {
-        await _dbHelper.updateBetResolution(
-          betId: bet.id,
-          status: BetStatus.lost,
-          actualPayout: 0,
-        );
+        await _processLosingBet(bet, market, winningOutcome);
       }
 
       _adminVaultCandies += (market.adminBackstopCandies ~/ 2);
       await _dbHelper.updateAdminVaultCandies(_adminVaultCandies);
     }
 
+    // Gửi thông báo chung đến toàn bộ Campus vào SQLite table 'notifications'
+    await _dbHelper.insertNotification(NotificationModel(
+      id: 'notif_campus_${DateTime.now().millisecondsSinceEpoch}',
+      userId: 'all',
+      title: '📢 Kèo Campus Đã Chốt Kết Quả',
+      message: 'Admin đã chính thức chốt kết quả kèo "${market.title}": CỬA ${winningOutcome == MarketOutcome.yes ? "CÓ" : "KHÔNG"} CHIẾN THẮNG!',
+      type: 'market_resolved',
+      marketId: market.id,
+      createdAt: DateTime.now(),
+    ));
+
     await _refreshDataFromDb();
+    notifyListeners();
+  }
+
+  Future<void> _processWinningBet(BetModel bet, MarketModel market, int totalPayout) async {
+    await _dbHelper.updateBetResolution(
+      betId: bet.id,
+      status: BetStatus.won,
+      actualPayout: totalPayout,
+    );
+    // Cộng kẹo vào SQLite tài khoản sinh viên thắng
+    await _dbHelper.addCandies(bet.userId, totalPayout);
+    final user = await _dbHelper.getUserById(bet.userId);
+    final balanceAfter = user?.candies ?? 0;
+
+    // Ghi nhận lịch sử thắng cược vào SQLite table 'history'
+    await _dbHelper.insertHistory(HistoryModel(
+      id: 'hist_win_${DateTime.now().millisecondsSinceEpoch}_${bet.id}',
+      userId: bet.userId,
+      userName: bet.userName,
+      marketId: market.id,
+      marketTitle: market.title,
+      action: 'bet_won',
+      outcome: bet.outcome.name,
+      amount: totalPayout,
+      balanceAfter: balanceAfter,
+      description: 'Thắng cược kèo "${market.title}" cửa ${bet.outcome == MarketOutcome.yes ? "CÓ" : "KHÔNG"}, nhận về +$totalPayout 🍬 (Vốn ${bet.amount} 🍬 + Lời ${totalPayout - bet.amount} 🍬)',
+      createdAt: DateTime.now(),
+    ));
+
+    // Thêm thông báo thắng cược vào SQLite table 'notifications'
+    await _dbHelper.insertNotification(NotificationModel(
+      id: 'notif_win_${DateTime.now().millisecondsSinceEpoch}_${bet.id}',
+      userId: bet.userId,
+      title: '🎉 THẮNG CƯỢC +$totalPayout 🍬',
+      message: 'Chúc mừng bạn đã thắng cược kèo "${market.title}" cửa ${bet.outcome == MarketOutcome.yes ? "CÓ" : "KHÔNG"}. Đã cộng +$totalPayout 🍬 vào tài khoản!',
+      type: 'win',
+      marketId: market.id,
+      amount: totalPayout,
+      createdAt: DateTime.now(),
+    ));
+  }
+
+  Future<void> _processLosingBet(BetModel bet, MarketModel market, MarketOutcome winningOutcome) async {
+    await _dbHelper.updateBetResolution(
+      betId: bet.id,
+      status: BetStatus.lost,
+      actualPayout: 0,
+    );
+    final user = await _dbHelper.getUserById(bet.userId);
+    final balanceAfter = user?.candies ?? 0;
+
+    // Ghi nhận lịch sử thua cược vào SQLite table 'history'
+    await _dbHelper.insertHistory(HistoryModel(
+      id: 'hist_loss_${DateTime.now().millisecondsSinceEpoch}_${bet.id}',
+      userId: bet.userId,
+      userName: bet.userName,
+      marketId: market.id,
+      marketTitle: market.title,
+      action: 'bet_lost',
+      outcome: bet.outcome.name,
+      amount: 0,
+      balanceAfter: balanceAfter,
+      description: 'Kèo "${market.title}" đã kết thúc. Bạn chọn cửa ${bet.outcome == MarketOutcome.yes ? "CÓ" : "KHÔNG"} (kết quả ${winningOutcome == MarketOutcome.yes ? "CÓ" : "KHÔNG"}), mất ${bet.amount} 🍬',
+      createdAt: DateTime.now(),
+    ));
+
+    // Thêm thông báo thua cược vào SQLite table 'notifications'
+    await _dbHelper.insertNotification(NotificationModel(
+      id: 'notif_loss_${DateTime.now().millisecondsSinceEpoch}_${bet.id}',
+      userId: bet.userId,
+      title: '😢 KẾT QUẢ KÈO CƯỢC',
+      message: 'Kèo "${market.title}" đã kết thúc: Cửa ${winningOutcome == MarketOutcome.yes ? "CÓ THẮNG" : "KHÔNG THẮNG"}. Cược của bạn chưa chính xác.',
+      type: 'loss',
+      marketId: market.id,
+      amount: -bet.amount,
+      createdAt: DateTime.now(),
+    ));
+  }
+
+  // --- QUẢN LÝ THÔNG BÁO TRỰC TIẾP TRONG SQLITE (BẢNG NOTIFICATIONS) ---
+  Future<void> deleteNotification(String id) async {
+    await _dbHelper.deleteNotification(id);
+    if (_currentUser != null) {
+      _notifications = await _dbHelper.getNotificationsForUser(_currentUser!.id);
+      notifyListeners();
+    }
+  }
+
+  Future<void> markNotificationAsRead(String id) async {
+    await _dbHelper.markNotificationAsRead(id);
+    if (_currentUser != null) {
+      _notifications = await _dbHelper.getNotificationsForUser(_currentUser!.id);
+      notifyListeners();
+    }
+  }
+
+  Future<void> clearAllNotifications() async {
+    if (_currentUser == null) return;
+    await _dbHelper.clearNotificationsForUser(_currentUser!.id);
+    _notifications = await _dbHelper.getNotificationsForUser(_currentUser!.id);
     notifyListeners();
   }
 

@@ -137,4 +137,127 @@ void main() {
     final studentInDb = await DatabaseHelper.instance.getUserByEmail('student@fpt.edu.vn');
     expect(studentInDb!.candies, greaterThan(candiesAfterBet));
   });
+
+  test('Admin can expire market immediately and resolve it', () async {
+    final appService = AppService();
+    await appService.init();
+
+    await appService.login('admin@fpt.edu.vn', 'admin123');
+    final market = appService.markets.firstWhere((m) => m.status == MarketStatus.active);
+
+    // Expire market immediately
+    await appService.expireMarketNow(market.id);
+
+    final expiredMarket = await DatabaseHelper.instance.getMarketById(market.id);
+    expect(expiredMarket!.isExpired, isTrue);
+    expect(expiredMarket.canBet, isFalse);
+
+    // Admin can still resolve the expired market
+    await appService.resolveMarket(
+      marketId: market.id,
+      winningOutcome: MarketOutcome.yes,
+    );
+
+    final resolvedMarket = await DatabaseHelper.instance.getMarketById(market.id);
+    expect(resolvedMarket!.status, equals(MarketStatus.resolved));
+    expect(resolvedMarket.winningOutcome, equals(MarketOutcome.yes));
+  });
+
+  test('If only one side is bet on, Admin vault is deducted when that side wins', () async {
+    final appService = AppService();
+    await appService.init();
+
+    // Admin creates brand new solo market with 50 backstop
+    await appService.login('admin@fpt.edu.vn', 'admin123');
+    await appService.createMarket(
+      title: 'Solo Market Test',
+      description: 'Test solo betting',
+      category: 'Campus FPT',
+      campus: 'Toàn quốc',
+      endDate: DateTime.now().add(const Duration(days: 1)),
+      initialAdminBackstop: 50,
+    );
+
+    final market = appService.markets.first;
+
+    // Only 1 student bets on YES (0 people bet on NO)
+    await appService.login('student@fpt.edu.vn', 'student123');
+    await appService.placeBet(
+      marketId: market.id,
+      outcome: MarketOutcome.yes,
+      amount: 20,
+    );
+
+    // Admin logs in and resolves YES as won
+    await appService.login('admin@fpt.edu.vn', 'admin123');
+    final vaultBeforeResolve = appService.adminVaultCandies;
+
+    await appService.resolveMarket(
+      marketId: market.id,
+      winningOutcome: MarketOutcome.yes,
+    );
+
+    // Admin vault is deducted in SQLite because Admin paid the reward!
+    expect(appService.adminVaultCandies, lessThan(vaultBeforeResolve));
+    final vaultInDb = await DatabaseHelper.instance.getAdminVaultCandies();
+    expect(vaultInDb, lessThan(vaultBeforeResolve));
+  });
+
+  test('History table in SQLite records bet placements, daily claims, and resolutions with balance tracking', () async {
+    final appService = AppService();
+    await appService.init();
+
+    await appService.login('student@fpt.edu.vn', 'student123');
+    final initialHistoryCount = appService.history.length;
+
+    // 1. Daily Claim logs to SQLite history
+    await appService.claimDailyCandy();
+    expect(appService.history.length, equals(initialHistoryCount + 1));
+    expect(appService.history.first.action, equals('daily_claim'));
+    expect(appService.history.first.amount, equals(20));
+
+    // 2. Bet placement logs to SQLite history
+    final market = appService.markets.first;
+    await appService.placeBet(
+      marketId: market.id,
+      outcome: MarketOutcome.yes,
+      amount: 10,
+    );
+
+    expect(appService.history.first.action, equals('bet_placed'));
+    expect(appService.history.first.amount, equals(-10));
+    expect(appService.history.first.outcome, equals('yes'));
+
+    // Check directly in SQLite 'history' table
+    final dbHistory = await DatabaseHelper.instance.getHistoryForUser('student_1');
+    expect(dbHistory.any((h) => h.action == 'bet_placed' && h.amount == -10), isTrue);
+  });
+
+  test('Notifications table in SQLite stores notifications and deleting record removes it from SQLite', () async {
+    final appService = AppService();
+    await appService.init();
+
+    await appService.login('student@fpt.edu.vn', 'student123');
+    expect(appService.notifications, isNotEmpty);
+
+    final notifToDelete = appService.notifications.first;
+    final initialCount = appService.notifications.length;
+
+    // Delete single notification from SQLite
+    await appService.deleteNotification(notifToDelete.id);
+
+    // Verify removed from in-memory AppService
+    expect(appService.notifications.length, equals(initialCount - 1));
+    expect(appService.notifications.any((n) => n.id == notifToDelete.id), isFalse);
+
+    // Verify completely deleted from SQLite database table 'notifications'
+    final dbNotifs = await DatabaseHelper.instance.getNotificationsForUser('student_1');
+    expect(dbNotifs.any((n) => n.id == notifToDelete.id), isFalse);
+
+    // Test clear all notifications
+    await appService.clearAllNotifications();
+    expect(appService.notifications, isEmpty);
+    final emptyDbNotifs = await DatabaseHelper.instance.getNotificationsForUser('student_1');
+    expect(emptyDbNotifs, isEmpty);
+  });
 }
