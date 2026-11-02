@@ -14,19 +14,9 @@ class _CreateMarketScreenState extends State<CreateMarketScreen> {
   final _descriptionController = TextEditingController();
   final _backstopController = TextEditingController(text: '50');
   
-  String _selectedCategory = 'Học tập & Thi cử';
   String _selectedCampus = 'Toàn quốc';
   DateTime _endDate = DateTime.now().add(const Duration(days: 7));
   bool _isLoading = false;
-
-  final List<String> _categories = [
-    'Học tập & Thi cử',
-    'Vinh danh & Cóc Vàng',
-    'Đời sống Campus',
-    'Sự kiện & CLB',
-    'Thể thao Vovinam',
-    'Công nghệ & Hackathon',
-  ];
 
   final List<String> _campuses = [
     'Toàn quốc',
@@ -62,7 +52,7 @@ class _CreateMarketScreenState extends State<CreateMarketScreen> {
     await appService.createMarket(
       title: title,
       description: desc,
-      category: _selectedCategory,
+      category: 'Campus FPT',
       campus: _selectedCampus,
       endDate: _endDate,
       initialAdminBackstop: backstop,
@@ -150,38 +140,18 @@ class _CreateMarketScreenState extends State<CreateMarketScreen> {
             ),
             const SizedBox(height: 16),
 
-            Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    initialValue: _selectedCategory,
-                    decoration: const InputDecoration(
-                      labelText: 'Chủ đề / Danh mục',
-                    ),
-                    items: _categories.map((c) {
-                      return DropdownMenuItem(value: c, child: Text(c, style: const TextStyle(fontSize: 13)));
-                    }).toList(),
-                    onChanged: (val) {
-                      if (val != null) setState(() => _selectedCategory = val);
-                    },
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    initialValue: _selectedCampus,
-                    decoration: const InputDecoration(
-                      labelText: 'Cơ sở Campus',
-                    ),
-                    items: _campuses.map((c) {
-                      return DropdownMenuItem(value: c, child: Text(c, style: const TextStyle(fontSize: 13)));
-                    }).toList(),
-                    onChanged: (val) {
-                      if (val != null) setState(() => _selectedCampus = val);
-                    },
-                  ),
-                ),
-              ],
+            DropdownButtonFormField<String>(
+              initialValue: _selectedCampus,
+              decoration: const InputDecoration(
+                labelText: 'Cơ sở Campus FPT',
+                prefixIcon: Icon(Icons.location_city, color: FptColors.orange),
+              ),
+              items: _campuses.map((c) {
+                return DropdownMenuItem(value: c, child: Text(c, style: const TextStyle(fontSize: 14)));
+              }).toList(),
+              onChanged: (val) {
+                if (val != null) setState(() => _selectedCampus = val);
+              },
             ),
             const SizedBox(height: 16),
 

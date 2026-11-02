@@ -106,15 +106,15 @@ class _ResolveMarketScreenState extends State<ResolveMarketScreen> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                 decoration: BoxDecoration(
-                                  color: FptColors.orange.withOpacity(0.12),
+                                  color: FptColors.gray100,
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
-                                  m.category,
+                                  m.campus,
                                   style: const TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.w700,
-                                    color: FptColors.orangeDark,
+                                    color: FptColors.gray600,
                                   ),
                                 ),
                               ),

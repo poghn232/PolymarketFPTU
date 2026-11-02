@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../models/market_model.dart';
+import '../services/app_service.dart';
 import '../theme/fpt_theme.dart';
 import 'bet_bottom_sheet.dart';
+import 'countdown_timer.dart';
 
 class MarketCard extends StatelessWidget {
   final MarketModel market;
@@ -15,6 +17,9 @@ class MarketCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final appService = AppService();
+    final myBet = appService.getMyBetForMarket(market.id);
+
     final yesPct = market.yesPercentage;
     final noPct = market.noPercentage;
     final isResolved = market.status == MarketStatus.resolved;
@@ -26,8 +31,10 @@ class MarketCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
-          color: isResolved ? Colors.grey.shade300 : const Color(0xFFE2E8F0),
-          width: 1.2,
+          color: isResolved
+              ? Colors.grey.shade300
+              : (myBet != null ? FptColors.orange.withOpacity(0.5) : const Color(0xFFE2E8F0)),
+          width: myBet != null ? 1.5 : 1.2,
         ),
       ),
       child: InkWell(
@@ -38,50 +45,30 @@ class MarketCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Top tags row
+              // Top Row: Campus & Status / Countdown
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: FptColors.orange.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          market.category,
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: FptColors.gray100,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.location_on, size: 11, color: FptColors.gray600),
+                        const SizedBox(width: 3),
+                        Text(
+                          market.campus,
                           style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: FptColors.orangeDark,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: FptColors.gray600,
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: FptColors.gray100,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.location_on, size: 10, color: FptColors.gray600),
-                            const SizedBox(width: 2),
-                            Text(
-                              market.campus,
-                              style: const TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                color: FptColors.gray600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                   if (isResolved)
                     Container(
@@ -106,20 +93,7 @@ class MarketCard extends StatelessWidget {
                       ),
                     )
                   else
-                    Row(
-                      children: [
-                        const Icon(Icons.access_time_rounded, size: 12, color: FptColors.textMuted),
-                        const SizedBox(width: 3),
-                        Text(
-                          'Còn ${_daysRemaining(market.endDate)}',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: FptColors.textMuted,
-                          ),
-                        ),
-                      ],
-                    ),
+                    CountdownTimerWidget(endDate: market.endDate, isCompact: true),
                 ],
               ),
               const SizedBox(height: 10),
@@ -136,28 +110,54 @@ class MarketCard extends StatelessWidget {
               ),
               const SizedBox(height: 12),
 
-              // Chance Probability Bar (Polymarket Visual)
+              // Chance Probability Bar & Bettors count (Polymarket Visual)
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'CÓ ${yesPct.toStringAsFixed(0)}%',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                          color: FptColors.yesGreen,
-                        ),
+                      Row(
+                        children: [
+                          Text(
+                            'CÓ ${yesPct.toStringAsFixed(0)}%',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                              color: FptColors.yesGreen,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            '(${market.yesPool} 🍬 • ${market.yesCount} người)',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: FptColors.textMuted,
+                            ),
+                          ),
+                        ],
                       ),
-                      Text(
-                        'KHÔNG ${noPct.toStringAsFixed(0)}%',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                          color: FptColors.noRed,
-                        ),
+                      Row(
+                        children: [
+                          Text(
+                            '(${market.noPool} 🍬 • ${market.noCount} người)',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: FptColors.textMuted,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'KHÔNG ${noPct.toStringAsFixed(0)}%',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                              color: FptColors.noRed,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -183,6 +183,50 @@ class MarketCard extends StatelessWidget {
                   ),
                 ],
               ),
+
+              // Khu vực hiển thị cược của bạn (Nếu đã cược)
+              if (myBet != null) ...[
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: myBet.outcome == MarketOutcome.yes
+                        ? FptColors.yesGreenBg
+                        : FptColors.noRedBg,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: myBet.outcome == MarketOutcome.yes
+                          ? FptColors.yesGreen.withOpacity(0.4)
+                          : FptColors.noRed.withOpacity(0.4),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.check_circle,
+                        size: 14,
+                        color: myBet.outcome == MarketOutcome.yes
+                            ? FptColors.yesGreen
+                            : FptColors.noRed,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Bạn đã cược: ${myBet.outcome == MarketOutcome.yes ? "CÓ" : "KHÔNG"} (${myBet.amount} 🍬) • Dự kiến nhận: ~${myBet.potentialPayout} 🍬',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            color: myBet.outcome == MarketOutcome.yes
+                                ? const Color(0xFF047857)
+                                : const Color(0xFFB91C1C),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
               const SizedBox(height: 14),
 
               // Bottom Row: Volume in Candies & Quick Bet Action Buttons
@@ -202,9 +246,9 @@ class MarketCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 4),
-                      const Text(
-                        'đã cược',
-                        style: TextStyle(
+                      Text(
+                        '(${market.totalBettors} lượt)',
+                        style: const TextStyle(
                           fontSize: 11,
                           color: FptColors.textMuted,
                         ),
@@ -216,17 +260,27 @@ class MarketCard extends StatelessWidget {
                       children: [
                         _betButton(
                           context,
-                          label: 'Cược CÓ',
+                          label: myBet?.outcome == MarketOutcome.yes ? '✓ Đã cược CÓ' : 'Cược CÓ',
                           color: FptColors.yesGreen,
-                          bgColor: FptColors.yesGreenBg,
+                          bgColor: myBet?.outcome == MarketOutcome.yes
+                              ? FptColors.yesGreen
+                              : FptColors.yesGreenBg,
+                          textColor: myBet?.outcome == MarketOutcome.yes
+                              ? Colors.white
+                              : FptColors.yesGreen,
                           outcome: MarketOutcome.yes,
                         ),
                         const SizedBox(width: 8),
                         _betButton(
                           context,
-                          label: 'Cược KHÔNG',
+                          label: myBet?.outcome == MarketOutcome.no ? '✓ Đã cược KHÔNG' : 'Cược KHÔNG',
                           color: FptColors.noRed,
-                          bgColor: FptColors.noRedBg,
+                          bgColor: myBet?.outcome == MarketOutcome.no
+                              ? FptColors.noRed
+                              : FptColors.noRedBg,
+                          textColor: myBet?.outcome == MarketOutcome.no
+                              ? Colors.white
+                              : FptColors.noRed,
                           outcome: MarketOutcome.no,
                         ),
                       ],
@@ -245,6 +299,7 @@ class MarketCard extends StatelessWidget {
     required String label,
     required Color color,
     required Color bgColor,
+    required Color textColor,
     required MarketOutcome outcome,
   }) {
     return InkWell(
@@ -262,20 +317,12 @@ class MarketCard extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            fontSize: 12,
+            fontSize: 11,
             fontWeight: FontWeight.w800,
-            color: color,
+            color: textColor,
           ),
         ),
       ),
     );
-  }
-
-  String _daysRemaining(DateTime endDate) {
-    final diff = endDate.difference(DateTime.now());
-    if (diff.isNegative) return 'Hết hạn';
-    if (diff.inDays > 0) return '${diff.inDays} ngày';
-    if (diff.inHours > 0) return '${diff.inHours} giờ';
-    return '${diff.inMinutes} phút';
   }
 }

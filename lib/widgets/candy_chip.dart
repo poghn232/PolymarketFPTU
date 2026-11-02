@@ -152,20 +152,42 @@ class CandyChip extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: () {
-                    appService.claimDailyCandy();
-                    Navigator.pop(ctx);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('🎉 Nhận thành công +20 Kẹo điểm danh sinh viên!'),
-                        backgroundColor: FptColors.yesGreen,
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.card_giftcard),
-                  label: const Text('Điểm danh nhận ngay +20 Kẹo'),
+                  onPressed: !appService.canClaimDaily
+                      ? null
+                      : () async {
+                          final messenger = ScaffoldMessenger.of(context);
+                          final err = await appService.claimDailyCandy();
+                          if (ctx.mounted) Navigator.pop(ctx);
+
+                          if (err != null) {
+                            messenger.showSnackBar(
+                              SnackBar(
+                                content: Text(err),
+                                backgroundColor: FptColors.noRed,
+                              ),
+                            );
+                          } else {
+                            messenger.showSnackBar(
+                              const SnackBar(
+                                content: Text('🎉 Điểm danh thành công! Nhận +20 Kẹo vào tài khoản.'),
+                                backgroundColor: FptColors.yesGreen,
+                              ),
+                            );
+                          }
+                        },
+                  icon: Icon(
+                    appService.canClaimDaily ? Icons.card_giftcard : Icons.check_circle,
+                  ),
+                  label: Text(
+                    appService.canClaimDaily
+                        ? 'Điểm danh nhận ngay +20 Kẹo'
+                        : '✓ Đã điểm danh hôm nay (Quay lại ngày mai)',
+                  ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: FptColors.orange,
+                    backgroundColor: appService.canClaimDaily ? FptColors.orange : FptColors.gray400,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: FptColors.gray200,
+                    disabledForegroundColor: FptColors.gray600,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                 ),

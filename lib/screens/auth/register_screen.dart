@@ -53,6 +53,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       fullName: name,
       studentCode: code,
       email: email,
+      password: pass,
       campus: _selectedCampus,
     );
     setState(() => _isLoading = false);

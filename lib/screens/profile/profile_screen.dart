@@ -163,79 +163,27 @@ class ProfileScreen extends StatelessWidget {
                   _infoRow(
                     Icons.monetization_on,
                     'Chính sách kẹo tân thủ',
-                    '50 🍬 / sinh viên mới',
+                    '50 🍬 / sinh viên mới (SQLite)',
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
 
-            // Quick Account Switcher Card (Rất tiện cho GV chấm môn & SV test)
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Row(
-                    children: [
-                      Icon(Icons.swap_horiz, color: FptColors.orange, size: 20),
-                      SizedBox(width: 8),
-                      Text(
-                        'Chuyển đổi tài khoản nhanh để Test:',
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: FptColors.textDark),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () async {
-                            await appService.quickLoginAsAdmin();
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Đã chuyển sang tài khoản Admin Gốc!')),
-                              );
-                            }
-                          },
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(
-                              color: user.isAdmin ? FptColors.orange : const Color(0xFFCBD5E1),
-                              width: user.isAdmin ? 2 : 1,
-                            ),
-                          ),
-                          child: const Text('Admin Gốc', style: TextStyle(fontSize: 12)),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () async {
-                            await appService.quickLoginAsStudent();
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Đã chuyển sang tài khoản Sinh Viên Mẫu!')),
-                              );
-                            }
-                          },
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(
-                              color: !user.isAdmin ? FptColors.orange : const Color(0xFFCBD5E1),
-                              width: !user.isAdmin ? 2 : 1,
-                            ),
-                          ),
-                          child: const Text('Sinh Viên Mẫu', style: TextStyle(fontSize: 12)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+            // Logout Button
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: OutlinedButton.icon(
+                onPressed: () async {
+                  await appService.logout();
+                },
+                icon: const Icon(Icons.logout, color: FptColors.noRed, size: 18),
+                label: const Text('ĐĂNG XUẤT TÀI KHOẢN', style: TextStyle(color: FptColors.noRed, fontWeight: FontWeight.w800)),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: FptColors.noRed),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
               ),
             ),
             const SizedBox(height: 24),

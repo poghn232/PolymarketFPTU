@@ -19,6 +19,8 @@ class MarketModel {
   final String campus;
   int yesPool;
   int noPool;
+  int yesCount; // Số lượng người cược cửa CÓ
+  int noCount;  // Số lượng người cược cửa KHÔNG
   int adminBackstopCandies; // Kẹo Admin bảo chứng cho kèo
   MarketStatus status;
   MarketOutcome? winningOutcome;
@@ -34,6 +36,8 @@ class MarketModel {
     this.campus = 'Toàn quốc',
     this.yesPool = 0,
     this.noPool = 0,
+    this.yesCount = 0,
+    this.noCount = 0,
     this.adminBackstopCandies = 50,
     this.status = MarketStatus.active,
     this.winningOutcome,
@@ -43,6 +47,7 @@ class MarketModel {
   });
 
   int get totalVolume => yesPool + noPool;
+  int get totalBettors => yesCount + noCount;
 
   /// Tính tỉ lệ % CÓ (Polymarket style odds)
   double get yesPercentage {
@@ -58,6 +63,12 @@ class MarketModel {
 
   bool get isExpired => DateTime.now().isAfter(endDate);
   bool get canBet => status == MarketStatus.active && !isExpired;
+
+  Duration get remainingTime {
+    final now = DateTime.now();
+    if (now.isAfter(endDate)) return Duration.zero;
+    return endDate.difference(now);
+  }
 
   /// Ước tính số kẹo nhận được nếu cược một lượng kẹo vào một cửa
   int estimatePayout(MarketOutcome outcome, int betAmount) {
@@ -81,14 +92,16 @@ class MarketModel {
       'description': description,
       'category': category,
       'campus': campus,
-      'yesPool': yesPool,
-      'noPool': noPool,
-      'adminBackstopCandies': adminBackstopCandies,
+      'yes_pool': yesPool,
+      'no_pool': noPool,
+      'yes_count': yesCount,
+      'no_count': noCount,
+      'admin_backstop_candies': adminBackstopCandies,
       'status': status.name,
-      'winningOutcome': winningOutcome?.name,
-      'endDate': endDate.toIso8601String(),
-      'createdAt': createdAt.toIso8601String(),
-      'createdBy': createdBy,
+      'winning_outcome': winningOutcome?.name,
+      'end_date': endDate.toIso8601String(),
+      'created_at': createdAt.toIso8601String(),
+      'created_by': createdBy,
     };
   }
 
@@ -99,26 +112,28 @@ class MarketModel {
       description: map['description'] ?? '',
       category: map['category'] ?? 'Chung',
       campus: map['campus'] ?? 'Toàn quốc',
-      yesPool: (map['yesPool'] as num?)?.toInt() ?? 0,
-      noPool: (map['noPool'] as num?)?.toInt() ?? 0,
-      adminBackstopCandies: (map['adminBackstopCandies'] as num?)?.toInt() ?? 50,
+      yesPool: (map['yes_pool'] ?? map['yesPool'] as num?)?.toInt() ?? 0,
+      noPool: (map['no_pool'] ?? map['noPool'] as num?)?.toInt() ?? 0,
+      yesCount: (map['yes_count'] ?? map['yesCount'] as num?)?.toInt() ?? 0,
+      noCount: (map['no_count'] ?? map['noCount'] as num?)?.toInt() ?? 0,
+      adminBackstopCandies: (map['admin_backstop_candies'] ?? map['adminBackstopCandies'] as num?)?.toInt() ?? 50,
       status: MarketStatus.values.firstWhere(
         (e) => e.name == map['status'],
         orElse: () => MarketStatus.active,
       ),
-      winningOutcome: map['winningOutcome'] != null
+      winningOutcome: (map['winning_outcome'] ?? map['winningOutcome']) != null
           ? MarketOutcome.values.firstWhere(
-              (e) => e.name == map['winningOutcome'],
+              (e) => e.name == (map['winning_outcome'] ?? map['winningOutcome']),
               orElse: () => MarketOutcome.yes,
             )
           : null,
-      endDate: map['endDate'] != null
-          ? DateTime.parse(map['endDate'])
+      endDate: (map['end_date'] ?? map['endDate']) != null
+          ? DateTime.parse(map['end_date'] ?? map['endDate'])
           : DateTime.now().add(const Duration(days: 7)),
-      createdAt: map['createdAt'] != null
-          ? DateTime.parse(map['createdAt'])
+      createdAt: (map['created_at'] ?? map['createdAt']) != null
+          ? DateTime.parse(map['created_at'] ?? map['createdAt'])
           : DateTime.now(),
-      createdBy: map['createdBy'] ?? 'Admin FPT',
+      createdBy: map['created_by'] ?? map['createdBy'] ?? 'Admin FPT',
     );
   }
 

@@ -15,28 +15,9 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  String _selectedCategory = 'Tất cả';
-  String _selectedCampus = 'Tất cả';
-  String _filterStatus = 'all'; // 'all', 'active', 'resolved'
+  String _filterStatus = 'all'; // 'all', 'active', 'my_bets', 'resolved'
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-
-  final List<String> _categories = [
-    'Tất cả',
-    'Học tập & Thi cử',
-    'Vinh danh & Cóc Vàng',
-    'Đời sống Campus',
-    'Sự kiện & CLB',
-    'Thể thao Vovinam',
-  ];
-
-  final List<String> _campuses = [
-    'Tất cả',
-    'Toàn quốc',
-    'Hà Nội (Hòa Lạc)',
-    'TP.HCM (Quận 9)',
-    'Đà Nẵng',
-  ];
 
   @override
   void initState() {
@@ -58,19 +39,17 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final appService = AppService();
 
-    // Lọc markets
+    // Lọc markets trực tiếp từ danh sách dữ liệu SQLite
     var filteredMarkets = appService.markets.where((m) {
-      if (_selectedCategory != 'Tất cả' && m.category != _selectedCategory) {
-        return false;
-      }
-      if (_selectedCampus != 'Tất cả' && m.campus != _selectedCampus && m.campus != 'Toàn quốc') {
-        return false;
-      }
       if (_filterStatus == 'active' && m.status != MarketStatus.active) {
         return false;
       }
       if (_filterStatus == 'resolved' && m.status != MarketStatus.resolved) {
         return false;
+      }
+      if (_filterStatus == 'my_bets') {
+        final hasBet = appService.getMyBetForMarket(m.id) != null;
+        if (!hasBet) return false;
       }
       if (_searchQuery.isNotEmpty) {
         final inTitle = m.title.toLowerCase().contains(_searchQuery);
@@ -91,66 +70,27 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: CustomScrollView(
         slivers: [
-          // Banner Đề tài Học tập & Chào mừng
+          // Thông Báo Hệ Thống (Dạng thông báo trang nhã, không còn hiện tặng 50 kẹo)
           SliverToBoxAdapter(
             child: Container(
-              margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              margin: const EdgeInsets.fromLTRB(16, 12, 16, 6),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF0054A6), Color(0xFF003366)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: FptColors.blue.withOpacity(0.2),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
+                color: const Color(0xFFEFF6FF),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFBFDBFE)),
               ),
               child: Row(
                 children: [
-                  const Text('🎓', style: TextStyle(fontSize: 28)),
-                  const SizedBox(width: 12),
+                  const Icon(Icons.campaign_rounded, color: FptColors.blue, size: 20),
+                  const SizedBox(width: 10),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Sàn Dự Đoán Kẹo Campus FPT',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Sinh viên: ${appService.currentUser?.fullName ?? ""} • ${appService.currentUser?.studentCode ?? ""}',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: Color(0xFFBFDBFE),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: FptColors.orange,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Text(
-                      '50 🍬 Free',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
+                    child: Text(
+                      'Thông báo: Chào mừng ${appService.currentUser?.fullName ?? "bạn"}! Các kèo dự đoán campus đang mở thưởng.',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF1E3A8A),
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -159,14 +99,14 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          // Search Bar
+          // Search Bar (Truy vấn theo database)
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               child: TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
-                  hintText: 'Tìm kiếm kèo dự đoán (môn học, thi cử, canteen...)...',
+                  hintText: 'Tìm kiếm kèo dự đoán (môn học, sự kiện, kỳ thi...)...',
                   hintStyle: const TextStyle(fontSize: 13, color: FptColors.textMuted),
                   prefixIcon: const Icon(Icons.search, color: FptColors.orange, size: 20),
                   suffixIcon: _searchQuery.isNotEmpty
@@ -183,99 +123,31 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          // Categories Horizontal List
+          // Bộ lọc trạng thái (Đã bỏ các tag học tập & thi cử theo yêu cầu)
           SliverToBoxAdapter(
-            child: SizedBox(
-              height: 44,
-              child: ListView.builder(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
+              child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: _categories.length,
-                itemBuilder: (ctx, idx) {
-                  final cat = _categories[idx];
-                  final isSelected = cat == _selectedCategory;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ChoiceChip(
-                      label: Text(cat),
-                      selected: isSelected,
-                      labelStyle: TextStyle(
-                        fontSize: 12,
-                        fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                        color: isSelected ? Colors.white : FptColors.gray800,
-                      ),
-                      selectedColor: FptColors.orange,
-                      backgroundColor: Colors.white,
-                      side: BorderSide(
-                        color: isSelected ? FptColors.orange : const Color(0xFFE2E8F0),
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      onSelected: (val) {
-                        if (val) setState(() => _selectedCategory = cat);
-                      },
-                    ),
-                  );
-                },
+                child: Row(
+                  children: [
+                    _statusButton('Tất cả', 'all'),
+                    const SizedBox(width: 6),
+                    _statusButton('Đang mở', 'active'),
+                    const SizedBox(width: 6),
+                    _statusButton('Tôi đã cược', 'my_bets'),
+                    const SizedBox(width: 6),
+                    _statusButton('Đã chốt kèo', 'resolved'),
+                  ],
+                ),
               ),
             ),
           ),
 
-          // Status & Campus Filters row
+          // Tiêu đề số lượng kèo
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Campus Filter Dropdown Pill
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: _selectedCampus,
-                        isDense: true,
-                        icon: const Icon(Icons.keyboard_arrow_down, size: 18),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: FptColors.textDark,
-                        ),
-                        items: _campuses.map((c) {
-                          return DropdownMenuItem(value: c, child: Text('📍 $c'));
-                        }).toList(),
-                        onChanged: (val) {
-                          if (val != null) setState(() => _selectedCampus = val);
-                        },
-                      ),
-                    ),
-                  ),
-
-                  // Status Segment
-                  Row(
-                    children: [
-                      _statusButton('Tất cả', 'all'),
-                      const SizedBox(width: 4),
-                      _statusButton('Đang mở', 'active'),
-                      const SizedBox(width: 4),
-                      _statusButton('Đã chốt', 'resolved'),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // Markets Count
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(18, 10, 18, 2),
+              padding: const EdgeInsets.fromLTRB(18, 10, 18, 4),
               child: Row(
                 children: [
                   const Icon(Icons.trending_up, size: 16, color: FptColors.orange),
@@ -294,7 +166,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          // Markets List
+          // Danh sách MarketCards
           if (filteredMarkets.isEmpty)
             const SliverFillRemaining(
               hasScrollBody: false,
@@ -348,17 +220,29 @@ class _HomeScreenState extends State<HomeScreen> {
     return GestureDetector(
       onTap: () => setState(() => _filterStatus = value),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
-          color: isSelected ? FptColors.orange.withOpacity(0.15) : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
+          color: isSelected ? FptColors.orange : Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSelected ? FptColors.orange : const Color(0xFFE2E8F0),
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: FptColors.orange.withOpacity(0.25),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  )
+                ]
+              : null,
         ),
         child: Text(
           title,
           style: TextStyle(
-            fontSize: 11,
+            fontSize: 12,
             fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-            color: isSelected ? FptColors.orangeDark : FptColors.gray600,
+            color: isSelected ? Colors.white : FptColors.gray800,
           ),
         ),
       ),

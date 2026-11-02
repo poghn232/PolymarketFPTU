@@ -72,8 +72,12 @@ class _BetBottomSheetState extends State<BetBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final appService = AppService();
+    final currentMarket = appService.markets.firstWhere(
+      (m) => m.id == widget.market.id,
+      orElse: () => widget.market,
+    );
     final userCandies = appService.currentUser?.candies ?? 0;
-    final estimatedPayout = widget.market.estimatePayout(_selectedOutcome, _betAmount);
+    final estimatedPayout = currentMarket.estimatePayout(_selectedOutcome, _betAmount);
     final potentialProfit = estimatedPayout - _betAmount;
     final isYes = _selectedOutcome == MarketOutcome.yes;
     final color = isYes ? FptColors.yesGreen : FptColors.noRed;
@@ -117,24 +121,8 @@ class _BetBottomSheetState extends State<BetBottomSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: FptColors.orange.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          widget.market.category,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: FptColors.orangeDark,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
                       Text(
-                        widget.market.title,
+                        currentMarket.title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -193,7 +181,7 @@ class _BetBottomSheetState extends State<BetBottomSheet> {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              'CÓ (${widget.market.yesPercentage.toStringAsFixed(0)}%)',
+                              'CÓ (${currentMarket.yesPercentage.toStringAsFixed(0)}%)',
                               style: TextStyle(
                                 fontWeight: FontWeight.w800,
                                 fontSize: 14,
@@ -233,7 +221,7 @@ class _BetBottomSheetState extends State<BetBottomSheet> {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              'KHÔNG (${widget.market.noPercentage.toStringAsFixed(0)}%)',
+                              'KHÔNG (${currentMarket.noPercentage.toStringAsFixed(0)}%)',
                               style: TextStyle(
                                 fontWeight: FontWeight.w800,
                                 fontSize: 14,
@@ -373,7 +361,7 @@ class _BetBottomSheetState extends State<BetBottomSheet> {
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
-                    'Admin bảo chứng quỹ ${widget.market.adminBackstopCandies} 🍬 nếu không có ai chọn bên còn lại.',
+                    'Admin bảo chứng quỹ ${currentMarket.adminBackstopCandies} 🍬 nếu không có ai chọn bên còn lại.',
                     style: const TextStyle(fontSize: 11, color: FptColors.gray600),
                   ),
                 ),

@@ -38,36 +38,37 @@ class BetModel {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
-      'marketId': marketId,
-      'marketTitle': marketTitle,
-      'userId': userId,
-      'userName': userName,
+      'market_id': marketId,
+      'market_title': marketTitle,
+      'user_id': userId,
+      'user_name': userName,
       'outcome': outcome.name,
       'amount': amount,
-      'potentialPayout': potentialPayout,
+      'potential_payout': potentialPayout,
       'status': status.name,
-      'actualPayout': actualPayout,
-      'placedAt': placedAt.toIso8601String(),
+      'actual_payout': actualPayout,
+      'placed_at': placedAt.toIso8601String(),
     };
   }
 
   factory BetModel.fromMap(Map<String, dynamic> map) {
+    final outcomeStr = map['outcome'] ?? 'yes';
     return BetModel(
       id: map['id'] ?? '',
-      marketId: map['marketId'] ?? '',
-      marketTitle: map['marketTitle'] ?? '',
-      userId: map['userId'] ?? '',
-      userName: map['userName'] ?? '',
-      outcome: map['outcome'] == 'yes' ? MarketOutcome.yes : MarketOutcome.no,
+      marketId: map['market_id'] ?? map['marketId'] ?? '',
+      marketTitle: map['market_title'] ?? map['marketTitle'] ?? '',
+      userId: map['user_id'] ?? map['userId'] ?? '',
+      userName: map['user_name'] ?? map['userName'] ?? '',
+      outcome: outcomeStr == 'yes' ? MarketOutcome.yes : MarketOutcome.no,
       amount: (map['amount'] as num?)?.toInt() ?? 0,
-      potentialPayout: (map['potentialPayout'] as num?)?.toInt() ?? 0,
+      potentialPayout: (map['potential_payout'] ?? map['potentialPayout'] as num?)?.toInt() ?? 0,
       status: BetStatus.values.firstWhere(
         (e) => e.name == map['status'],
         orElse: () => BetStatus.active,
       ),
-      actualPayout: (map['actualPayout'] as num?)?.toInt() ?? 0,
-      placedAt: map['placedAt'] != null
-          ? DateTime.parse(map['placedAt'])
+      actualPayout: (map['actual_payout'] ?? map['actualPayout'] as num?)?.toInt() ?? 0,
+      placedAt: (map['placed_at'] ?? map['placedAt']) != null
+          ? DateTime.parse(map['placed_at'] ?? map['placedAt'])
           : DateTime.now(),
     );
   }

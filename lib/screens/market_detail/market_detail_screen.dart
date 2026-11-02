@@ -4,6 +4,7 @@ import '../../services/app_service.dart';
 import '../../theme/fpt_theme.dart';
 import '../../widgets/candy_chip.dart';
 import '../../widgets/bet_bottom_sheet.dart';
+import '../../widgets/countdown_timer.dart';
 
 class MarketDetailScreen extends StatelessWidget {
   final String marketId;
@@ -25,6 +26,7 @@ class MarketDetailScreen extends StatelessWidget {
       ),
     );
 
+    final myBet = appService.getMyBetForMarket(marketId);
     final marketBets = appService.bets.where((b) => b.marketId == marketId).toList()
       ..sort((a, b) => b.placedAt.compareTo(a.placedAt));
 
@@ -46,27 +48,11 @@ class MarketDetailScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Top Tags
+            // Top Row: Campus & Status / Countdown
             Row(
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: FptColors.orange.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    market.category,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: FptColors.orangeDark,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: FptColors.gray200,
                     borderRadius: BorderRadius.circular(8),
@@ -106,7 +92,9 @@ class MarketDetailScreen extends StatelessWidget {
                             : FptColors.noRed,
                       ),
                     ),
-                  ),
+                  )
+                else
+                  CountdownTimerWidget(endDate: market.endDate),
               ],
             ),
             const SizedBox(height: 12),
@@ -121,7 +109,68 @@ class MarketDetailScreen extends StatelessWidget {
                 height: 1.3,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
+
+            // Khu vực hiển thị cược của bạn nếu đã cược
+            if (myBet != null) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: myBet.outcome == MarketOutcome.yes
+                      ? FptColors.yesGreenBg
+                      : FptColors.noRedBg,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: myBet.outcome == MarketOutcome.yes
+                        ? FptColors.yesGreen
+                        : FptColors.noRed,
+                    width: 1.5,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.stars_rounded,
+                      color: myBet.outcome == MarketOutcome.yes
+                          ? FptColors.yesGreen
+                          : FptColors.noRed,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'BẠN ĐÃ ĐẶT CƯỢC CỬA: ${myBet.outcome == MarketOutcome.yes ? "CÓ" : "KHÔNG"}',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w900,
+                              color: myBet.outcome == MarketOutcome.yes
+                                  ? const Color(0xFF065F46)
+                                  : const Color(0xFF991B1B),
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Số kẹo cược: ${myBet.amount} 🍬 • Dự kiến nhận về: ~${myBet.potentialPayout} 🍬 nếu thắng',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: myBet.outcome == MarketOutcome.yes
+                                  ? const Color(0xFF047857)
+                                  : const Color(0xFFB91C1C),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+            ],
 
             // Big Polymarket Duel Probability Card
             Container(
@@ -164,7 +213,7 @@ class MarketDetailScreen extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            '${market.yesPool} 🍬 đã cược',
+                            '${market.yesPool} 🍬 (${market.yesCount} người)',
                             style: const TextStyle(fontSize: 11, color: FptColors.textMuted),
                           ),
                         ],
@@ -190,7 +239,7 @@ class MarketDetailScreen extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            '${market.noPool} 🍬 đã cược',
+                            '${market.noPool} 🍬 (${market.noCount} người)',
                             style: const TextStyle(fontSize: 11, color: FptColors.textMuted),
                           ),
                         ],
@@ -408,8 +457,15 @@ class MarketDetailScreen extends StatelessWidget {
                               initialOutcome: MarketOutcome.yes,
                             );
                           },
-                          icon: const Icon(Icons.thumb_up, size: 16),
-                          label: Text('CƯỢC CÓ (${yesPct.toStringAsFixed(0)}%)'),
+                          icon: Icon(
+                            myBet?.outcome == MarketOutcome.yes ? Icons.check : Icons.thumb_up,
+                            size: 16,
+                          ),
+                          label: Text(
+                            myBet?.outcome == MarketOutcome.yes
+                                ? '✓ ĐÃ CƯỢC CÓ (${yesPct.toStringAsFixed(0)}%)'
+                                : 'CƯỢC CÓ (${yesPct.toStringAsFixed(0)}%)',
+                          ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: FptColors.yesGreen,
                             foregroundColor: Colors.white,
@@ -432,8 +488,15 @@ class MarketDetailScreen extends StatelessWidget {
                               initialOutcome: MarketOutcome.no,
                             );
                           },
-                          icon: const Icon(Icons.thumb_down, size: 16),
-                          label: Text('CƯỢC KHÔNG (${noPct.toStringAsFixed(0)}%)'),
+                          icon: Icon(
+                            myBet?.outcome == MarketOutcome.no ? Icons.check : Icons.thumb_down,
+                            size: 16,
+                          ),
+                          label: Text(
+                            myBet?.outcome == MarketOutcome.no
+                                ? '✓ ĐÃ CƯỢC KHÔNG (${noPct.toStringAsFixed(0)}%)'
+                                : 'CƯỢC KHÔNG (${noPct.toStringAsFixed(0)}%)',
+                          ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: FptColors.noRed,
                             foregroundColor: Colors.white,

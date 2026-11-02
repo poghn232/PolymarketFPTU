@@ -12,8 +12,8 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _emailController = TextEditingController(text: 'student@fpt.edu.vn');
-  final _passwordController = TextEditingController(text: 'student123');
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isLoading = false;
 
@@ -38,9 +38,8 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
     final appService = AppService();
     final success = await appService.login(email, password);
-    setState(() => _isLoading = false);
-
     if (!mounted) return;
+    setState(() => _isLoading = false);
 
     if (!success) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -54,27 +53,25 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final appService = AppService();
-
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 20),
+              const SizedBox(height: 30),
               // Header Logo & Branding
               Center(
                 child: Column(
                   children: [
-                    const FptLogo(size: 48),
-                    const SizedBox(height: 12),
+                    const FptLogo(size: 52),
+                    const SizedBox(height: 14),
                     const Text(
                       'Sàn Dự Đoán Kẹo Sinh Viên FPT',
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: 20,
                         fontWeight: FontWeight.w800,
                         color: FptColors.textDark,
                       ),
@@ -98,84 +95,18 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 28),
-
-              // Quick Test Buttons (Theo yêu cầu: có account admin gốc sẵn trong code để dễ test)
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFCBD5E1)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Row(
-                      children: [
-                        Icon(Icons.bolt_rounded, color: FptColors.orange, size: 18),
-                        SizedBox(width: 4),
-                        Text(
-                          'Truy cập nhanh để Giảng viên / Bạn Test:',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: FptColors.textDark,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () async {
-                              await appService.quickLoginAsAdmin();
-                            },
-                            icon: const Icon(Icons.admin_panel_settings, size: 16),
-                            label: const Text('Admin Gốc'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: FptColors.navy,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                              textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () async {
-                              await appService.quickLoginAsStudent();
-                            },
-                            icon: const Icon(Icons.school, size: 16),
-                            label: const Text('Sinh Viên (50🍬)'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: FptColors.blue,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                              textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 40),
 
               // Normal Login Form
               const Text(
                 'Đăng nhập tài khoản',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 18,
                   fontWeight: FontWeight.w800,
                   color: FptColors.textDark,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
 
               TextField(
                 controller: _emailController,
@@ -183,6 +114,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 decoration: const InputDecoration(
                   labelText: 'Email FPT (@fpt.edu.vn hoặc @fe.edu.vn)',
                   prefixIcon: Icon(Icons.email_outlined, color: FptColors.orange),
+                  hintText: 'VD: admin@fpt.edu.vn hoặc student@fpt.edu.vn',
                 ),
               ),
               const SizedBox(height: 14),
@@ -202,26 +134,26 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
 
               // Login Button
               SizedBox(
-                height: 50,
+                height: 52,
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _handleLogin,
                   child: _isLoading
                       ? const SizedBox(
-                          height: 20,
-                          width: 20,
+                          height: 22,
+                          width: 22,
                           child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                         )
                       : const Text(
                           'ĐĂNG NHẬP',
-                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
                         ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
 
               // Register Navigation
               Row(
@@ -229,7 +161,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   const Text(
                     'Chưa có tài khoản? ',
-                    style: TextStyle(color: FptColors.gray600),
+                    style: TextStyle(color: FptColors.gray600, fontSize: 14),
                   ),
                   TextButton(
                     onPressed: () {
@@ -243,30 +175,39 @@ class _LoginScreenState extends State<LoginScreen> {
                       style: TextStyle(
                         fontWeight: FontWeight.w800,
                         color: FptColors.orange,
+                        fontSize: 14,
                       ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 36),
 
-              // Bottom Notice
+              // Ghi chú tài khoản admin và sinh viên để kiểm tra
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: FptColors.gray50,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: FptColors.gray200),
                 ),
-                child: const Row(
+                child: const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.info_outline, size: 16, color: FptColors.gray600),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Tài khoản admin mặc định: admin@fpt.edu.vn (pass: admin123)\nSinh viên mặc định: student@fpt.edu.vn (pass: student123)',
-                        style: TextStyle(fontSize: 11, color: FptColors.gray600, height: 1.3),
-                      ),
+                    Row(
+                      children: [
+                        Icon(Icons.info_outline, size: 16, color: FptColors.blue),
+                        SizedBox(width: 6),
+                        Text(
+                          'Tài khoản đăng nhập có sẵn trong cơ sở dữ liệu SQLite:',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: FptColors.textDark),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      '• Quản trị viên: admin@fpt.edu.vn (Mật khẩu: admin123)\n• Sinh viên mẫu: student@fpt.edu.vn (Mật khẩu: student123)',
+                      style: TextStyle(fontSize: 12, color: FptColors.gray800, height: 1.4),
                     ),
                   ],
                 ),
