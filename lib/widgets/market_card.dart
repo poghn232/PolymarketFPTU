@@ -18,13 +18,21 @@ class MarketCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final appService = AppService();
-    final myBet = appService.getMyBetForMarket(market.id);
 
-    final yesPct = market.yesPercentage;
-    final noPct = market.noPercentage;
-    final isResolved = market.status == MarketStatus.resolved;
+    return ListenableBuilder(
+      listenable: appService,
+      builder: (context, _) {
+        final liveMarket = appService.markets.firstWhere(
+          (m) => m.id == market.id,
+          orElse: () => market,
+        );
+        final myBet = appService.getMyBetForMarket(liveMarket.id);
 
-    return Card(
+        final yesPct = liveMarket.yesPercentage;
+        final noPct = liveMarket.noPercentage;
+        final isResolved = liveMarket.status == MarketStatus.resolved;
+
+        return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       elevation: 0,
       color: Colors.white,
@@ -291,6 +299,8 @@ class MarketCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+      },
     );
   }
 

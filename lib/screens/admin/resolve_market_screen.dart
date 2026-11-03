@@ -18,11 +18,15 @@ class _ResolveMarketScreenState extends State<ResolveMarketScreen> {
   @override
   Widget build(BuildContext context) {
     final appService = AppService();
-    final activeMarkets = appService.markets
-        .where((m) => m.status == MarketStatus.active)
-        .toList();
 
-    return Scaffold(
+    return ListenableBuilder(
+      listenable: appService,
+      builder: (context, _) {
+        final activeMarkets = appService.markets
+            .where((m) => m.status == MarketStatus.active)
+            .toList();
+
+        return Scaffold(
       backgroundColor: FptColors.lightBg,
       appBar: AppBar(
         title: const Text('Admin: Chốt Kết Quả & Trả Kẹo'),
@@ -443,6 +447,8 @@ class _ResolveMarketScreenState extends State<ResolveMarketScreen> {
           ],
         ),
       ),
+    );
+      },
     );
   }
 }

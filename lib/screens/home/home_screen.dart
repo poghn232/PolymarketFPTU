@@ -40,34 +40,37 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final appService = AppService();
 
-    // Lọc markets trực tiếp từ danh sách dữ liệu SQLite
-    var filteredMarkets = appService.markets.where((m) {
-      if (_filterStatus == 'active' && m.status != MarketStatus.active) {
-        return false;
-      }
-      if (_filterStatus == 'resolved' && m.status != MarketStatus.resolved) {
-        return false;
-      }
-      if (_filterStatus == 'my_bets') {
-        final hasBet = appService.getMyBetForMarket(m.id) != null;
-        if (!hasBet) return false;
-      }
-      if (_searchQuery.isNotEmpty) {
-        final inTitle = m.title.toLowerCase().contains(_searchQuery);
-        final inDesc = m.description.toLowerCase().contains(_searchQuery);
-        if (!inTitle && !inDesc) return false;
-      }
-      return true;
-    }).toList();
+    return ListenableBuilder(
+      listenable: appService,
+      builder: (context, _) {
+        // Lọc markets trực tiếp từ danh sách dữ liệu SQLite
+        var filteredMarkets = appService.markets.where((m) {
+          if (_filterStatus == 'active' && m.status != MarketStatus.active) {
+            return false;
+          }
+          if (_filterStatus == 'resolved' && m.status != MarketStatus.resolved) {
+            return false;
+          }
+          if (_filterStatus == 'my_bets') {
+            final hasBet = appService.getMyBetForMarket(m.id) != null;
+            if (!hasBet) return false;
+          }
+          if (_searchQuery.isNotEmpty) {
+            final inTitle = m.title.toLowerCase().contains(_searchQuery);
+            final inDesc = m.description.toLowerCase().contains(_searchQuery);
+            if (!inTitle && !inDesc) return false;
+          }
+          return true;
+        }).toList();
 
-    // Dữ liệu thông báo từ SQLite bảng 'notifications'
-    final List<NotificationModel> notifications = appService.notifications;
-    final NotificationModel? latestNotif = notifications.isNotEmpty ? notifications.first : null;
-    final notificationCount = appService.unreadNotificationCount > 0
-        ? appService.unreadNotificationCount
-        : notifications.length;
+        // Dữ liệu thông báo từ SQLite bảng 'notifications'
+        final List<NotificationModel> notifications = appService.notifications;
+        final NotificationModel? latestNotif = notifications.isNotEmpty ? notifications.first : null;
+        final notificationCount = appService.unreadNotificationCount > 0
+            ? appService.unreadNotificationCount
+            : notifications.length;
 
-    return Scaffold(
+        return Scaffold(
       backgroundColor: FptColors.lightBg,
       appBar: AppBar(
         title: const FptLogo(size: 32),
@@ -309,6 +312,8 @@ class _HomeScreenState extends State<HomeScreen> {
           const SliverToBoxAdapter(child: SizedBox(height: 30)),
         ],
       ),
+    );
+      },
     );
   }
 

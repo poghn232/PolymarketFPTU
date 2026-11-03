@@ -72,19 +72,23 @@ class _BetBottomSheetState extends State<BetBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final appService = AppService();
-    final currentMarket = appService.markets.firstWhere(
-      (m) => m.id == widget.market.id,
-      orElse: () => widget.market,
-    );
-    final userCandies = appService.currentUser?.candies ?? 0;
-    final estimatedPayout = currentMarket.estimatePayout(_selectedOutcome, _betAmount);
-    final potentialProfit = estimatedPayout - _betAmount;
-    final isYes = _selectedOutcome == MarketOutcome.yes;
-    final color = isYes ? FptColors.yesGreen : FptColors.noRed;
 
-    final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
+    return ListenableBuilder(
+      listenable: appService,
+      builder: (context, _) {
+        final currentMarket = appService.markets.firstWhere(
+          (m) => m.id == widget.market.id,
+          orElse: () => widget.market,
+        );
+        final userCandies = appService.currentUser?.candies ?? 0;
+        final estimatedPayout = currentMarket.estimatePayout(_selectedOutcome, _betAmount);
+        final potentialProfit = estimatedPayout - _betAmount;
+        final isYes = _selectedOutcome == MarketOutcome.yes;
+        final color = isYes ? FptColors.yesGreen : FptColors.noRed;
 
-    return Container(
+        final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
+
+        return Container(
       padding: EdgeInsets.only(
         top: 16,
         left: 20,
@@ -439,6 +443,8 @@ class _BetBottomSheetState extends State<BetBottomSheet> {
           ],
         ),
       ),
+    );
+      },
     );
   }
 

@@ -3,63 +3,72 @@ import '../services/app_service.dart';
 import '../theme/fpt_theme.dart';
 
 class CandyChip extends StatelessWidget {
-  final int candies;
+  final int? candies;
   final VoidCallback? onTap;
 
   const CandyChip({
     super.key,
-    required this.candies,
+    this.candies,
     this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap ?? () => _showCandyDetails(context),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFFFFF7ED), Color(0xFFFFEDD5)],
+    final appService = AppService();
+
+    return ListenableBuilder(
+      listenable: appService,
+      builder: (context, _) {
+        final displayCandies = candies ?? (appService.currentUser?.candies ?? 0);
+
+        return GestureDetector(
+          onTap: onTap ?? () => _showCandyDetails(context),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFFFF7ED), Color(0xFFFFEDD5)],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFFFDBA74), width: 1.2),
+              boxShadow: [
+                BoxShadow(
+                  color: FptColors.orange.withOpacity(0.08),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  '🍬',
+                  style: TextStyle(fontSize: 16),
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  '$displayCandies',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14,
+                    color: Color(0xFFC2410C),
+                  ),
+                ),
+                const SizedBox(width: 3),
+                const Text(
+                  'Kẹo',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 11,
+                    color: Color(0xFF9A3412),
+                  ),
+                ),
+              ],
+            ),
           ),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFFDBA74), width: 1.2),
-          boxShadow: [
-            BoxShadow(
-              color: FptColors.orange.withOpacity(0.08),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              '🍬',
-              style: TextStyle(fontSize: 16),
-            ),
-            const SizedBox(width: 5),
-            Text(
-              '$candies',
-              style: const TextStyle(
-                fontWeight: FontWeight.w800,
-                fontSize: 14,
-                color: Color(0xFFC2410C),
-              ),
-            ),
-            const SizedBox(width: 3),
-            const Text(
-              'Kẹo',
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 11,
-                color: Color(0xFF9A3412),
-              ),
-            ),
-          ],
-        ),
-      ),
+        );
+      },
     );
   }
 

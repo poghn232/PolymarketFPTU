@@ -15,27 +15,31 @@ class MarketDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final appService = AppService();
-    final market = appService.markets.firstWhere(
-      (m) => m.id == marketId,
-      orElse: () => MarketModel(
-        id: '',
-        title: 'Kèo không tồn tại',
-        description: '',
-        category: '',
-        endDate: DateTime.now(),
-        createdAt: DateTime.now(),
-      ),
-    );
 
-    final myBet = appService.getMyBetForMarket(marketId);
-    final marketBets = appService.bets.where((b) => b.marketId == marketId).toList()
-      ..sort((a, b) => b.placedAt.compareTo(a.placedAt));
+    return ListenableBuilder(
+      listenable: appService,
+      builder: (context, _) {
+        final market = appService.markets.firstWhere(
+          (m) => m.id == marketId,
+          orElse: () => MarketModel(
+            id: '',
+            title: 'Kèo không tồn tại',
+            description: '',
+            category: '',
+            endDate: DateTime.now(),
+            createdAt: DateTime.now(),
+          ),
+        );
 
-    final yesPct = market.yesPercentage;
-    final noPct = market.noPercentage;
-    final isResolved = market.status == MarketStatus.resolved;
+        final myBet = appService.getMyBetForMarket(marketId);
+        final marketBets = appService.bets.where((b) => b.marketId == marketId).toList()
+          ..sort((a, b) => b.placedAt.compareTo(a.placedAt));
 
-    return Scaffold(
+        final yesPct = market.yesPercentage;
+        final noPct = market.noPercentage;
+        final isResolved = market.status == MarketStatus.resolved;
+
+        return Scaffold(
       backgroundColor: FptColors.lightBg,
       appBar: AppBar(
         title: const Text('Chi Tiết Kèo Dự Đoán'),
@@ -685,6 +689,8 @@ class MarketDetailScreen extends StatelessWidget {
               ),
             )
           : null,
+    );
+      },
     );
   }
 }

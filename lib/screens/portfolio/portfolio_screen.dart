@@ -33,20 +33,24 @@ class _PortfolioScreenState extends State<PortfolioScreen> with SingleTickerProv
   @override
   Widget build(BuildContext context) {
     final appService = AppService();
-    final myBets = appService.myBets;
 
-    // Phân loại rõ ràng 2 khu vực: Đang chờ kết quả & Đã có kết quả
-    final pendingBets = appService.myPendingBets;
-    final resolvedBets = appService.myResolvedBets;
+    return ListenableBuilder(
+      listenable: appService,
+      builder: (context, _) {
+        final myBets = appService.myBets;
 
-    final int totalLockedCandies = pendingBets.fold(0, (sum, b) => sum + b.amount);
-    final int totalWonCandies = resolvedBets
-        .where((b) => b.status == BetStatus.won)
-        .fold(0, (sum, b) => sum + b.actualPayout);
+        // Phân loại rõ ràng 2 khu vực: Đang chờ kết quả & Đã có kết quả
+        final pendingBets = appService.myPendingBets;
+        final resolvedBets = appService.myResolvedBets;
 
-    final history = appService.history;
+        final int totalLockedCandies = pendingBets.fold(0, (sum, b) => sum + b.amount);
+        final int totalWonCandies = resolvedBets
+            .where((b) => b.status == BetStatus.won)
+            .fold(0, (sum, b) => sum + b.actualPayout);
 
-    return Scaffold(
+        final history = appService.history;
+
+        return Scaffold(
       backgroundColor: FptColors.lightBg,
       appBar: AppBar(
         title: const Text('Cược Của Tôi'),
@@ -235,6 +239,8 @@ class _PortfolioScreenState extends State<PortfolioScreen> with SingleTickerProv
           ),
         ],
       ),
+    );
+      },
     );
   }
 

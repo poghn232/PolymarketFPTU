@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:polymarket_fpt/main.dart';
@@ -259,5 +260,47 @@ void main() {
     expect(appService.notifications, isEmpty);
     final emptyDbNotifs = await DatabaseHelper.instance.getNotificationsForUser('student_1');
     expect(emptyDbNotifs, isEmpty);
+  });
+
+  testWidgets('HomeScreen, ProfileScreen, and CandyChip instantly update displayed candies when bet is placed', (WidgetTester tester) async {
+    final appService = AppService();
+    await appService.init();
+
+    // Login as student
+    await appService.login('student@fpt.edu.vn', 'student123');
+
+    // Build the app (pump frame with duration to avoid infinite settle due to CountdownTimer periodic tickers)
+    await tester.pumpWidget(const FptMarketApp());
+    await tester.pump(const Duration(milliseconds: 200));
+
+    final initialCandies = appService.currentUser!.candies;
+    // Verify initial candies are displayed in CandyChip on HomeScreen
+    expect(find.text('$initialCandies'), findsWidgets);
+
+    // Place bet of 20 candies
+    final market = appService.markets.first;
+    await appService.placeBet(
+      marketId: market.id,
+      outcome: MarketOutcome.yes,
+      amount: 20,
+    );
+
+    // Pump widget frame to reflect notifyListeners
+    await tester.pump(const Duration(milliseconds: 200));
+
+    final newCandies = initialCandies - 20;
+    // Verify CandyChip on HomeScreen IMMEDIATELY displays newCandies without app restart!
+    expect(find.text('$newCandies'), findsWidgets);
+    expect(find.text('$initialCandies'), findsNothing);
+
+    // Switch to Profile tab
+    await tester.tap(find.text('Hồ Sơ'));
+    await tester.pump(const Duration(milliseconds: 200));
+
+    // Verify ProfileScreen displays the updated newCandies directly
+    expect(find.text('$newCandies 🍬'), findsOneWidget);
+
+    // Unmount app to cancel all CountdownTimer periodic tickers and clean up
+    await tester.pumpWidget(const SizedBox());
   });
 }

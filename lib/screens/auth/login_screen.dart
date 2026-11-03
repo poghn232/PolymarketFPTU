@@ -66,8 +66,29 @@ class _LoginScreenState extends State<LoginScreen> {
               Center(
                 child: Column(
                   children: [
-                    const FptLogo(size: 52),
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(22),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFF37021).withOpacity(0.25),
+                            blurRadius: 16,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(22),
+                        child: Image.asset(
+                          'assets/icon/app_icon.png',
+                          width: 80,
+                          height: 80,
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 14),
+                    const FptLogo(size: 42),
+                    const SizedBox(height: 10),
                     const Text(
                       'Sàn Dự Đoán Kẹo Sinh Viên FPT',
                       style: TextStyle(

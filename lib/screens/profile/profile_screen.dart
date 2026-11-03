@@ -9,29 +9,33 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final appService = AppService();
-    final user = appService.currentUser;
 
-    if (user == null) {
-      return const Scaffold(
-        body: Center(child: Text('Chưa đăng nhập')),
-      );
-    }
+    return ListenableBuilder(
+      listenable: appService,
+      builder: (context, _) {
+        final user = appService.currentUser;
 
-    return Scaffold(
-      backgroundColor: FptColors.lightBg,
-      appBar: AppBar(
-        title: const Text('Hồ Sơ Sinh Viên FPT'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout, color: FptColors.noRed),
-            tooltip: 'Đăng xuất',
-            onPressed: () async {
-              await appService.logout();
-            },
+        if (user == null) {
+          return const Scaffold(
+            body: Center(child: Text('Chưa đăng nhập')),
+          );
+        }
+
+        return Scaffold(
+          backgroundColor: FptColors.lightBg,
+          appBar: AppBar(
+            title: const Text('Hồ Sơ Sinh Viên FPT'),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.logout, color: FptColors.noRed),
+                tooltip: 'Đăng xuất',
+                onPressed: () async {
+                  await appService.logout();
+                },
+              ),
+            ],
           ),
-        ],
-      ),
-      body: SingleChildScrollView(
+          body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
@@ -200,6 +204,8 @@ class ProfileScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+      },
     );
   }
 

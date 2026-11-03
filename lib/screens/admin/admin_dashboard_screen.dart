@@ -12,14 +12,18 @@ class AdminDashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final appService = AppService();
-    final markets = appService.markets;
-    final activeMarkets = markets.where((m) => m.status == MarketStatus.active).length;
-    final resolvedMarkets = markets.where((m) => m.status == MarketStatus.resolved).length;
-    final totalBets = appService.bets.length;
-    final totalStudents = appService.users.where((u) => u.role == UserRole.student).length;
 
-    return Scaffold(
-      backgroundColor: FptColors.lightBg,
+    return ListenableBuilder(
+      listenable: appService,
+      builder: (context, _) {
+        final markets = appService.markets;
+        final activeMarkets = markets.where((m) => m.status == MarketStatus.active).length;
+        final resolvedMarkets = markets.where((m) => m.status == MarketStatus.resolved).length;
+        final totalBets = appService.bets.length;
+        final totalStudents = appService.users.where((u) => u.role == UserRole.student).length;
+
+        return Scaffold(
+          backgroundColor: FptColors.lightBg,
       appBar: AppBar(
         title: const Row(
           children: [
@@ -186,6 +190,8 @@ class AdminDashboardScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+      },
     );
   }
 
